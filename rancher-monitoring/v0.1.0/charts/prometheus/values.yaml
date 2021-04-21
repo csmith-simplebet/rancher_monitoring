@@ -1,0 +1,131 @@
+enabledRBAC: true
+
+## External labels to add to any time series or alerts when communicating with external systems
+##
+externalLabels: {}
+
+##Custom Labels to be added to Prometheus Rules CRDs
+##
+additionalRulesLabels: {}
+
+## Tolerations for use with node taints
+## Ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+##
+tolerations: []
+  #  - key: "key"
+  #    operator: "Equal"
+  #    value: "value"
+  #    effect: "NoSchedule"
+
+## If true, the Operator won't process any Prometheus configuration changes
+##
+paused: false
+
+## Number of Prometheus replicas desired
+##
+replicaCount: 1
+
+## The remote_read spec configuration for Prometheus.
+## Ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#remotereadspec
+remoteRead: []
+# - url: http://remote1/read
+
+## The remote_write spec configuriation for Prometheus.
+## Ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#remotewritespec
+remoteWrite: []
+# - url: http://remote1/push
+
+## How long to retain metrics
+##
+retention: 24h
+
+logLevel: "info"
+logFormat: "logfmt"
+scrapeInterval: "60s"
+evaluationInterval: "60s"
+
+## Prometheus StorageSpec for persistent data
+## Ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/user-guides/storage.md
+##
+storageSpec: {}
+#  storageClassName: gluster
+#  accessModes: ["ReadWriteOnce"]
+#  resources:
+#    requests:
+#      storage: 50Gi
+#  selector: {}
+
+## Prometheus AdditionalScrapeConfigs
+## Ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#prometheusspec
+##
+additionalScrapeConfigs: []
+# - job_name: "prometheus"
+#   static_configs:
+#   - targets:
+#     - "localhost:9090"
+
+## Prometheus AdditionalAlertManagerConfigs
+## Ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#prometheusspec
+##
+additionalAlertManagerConfigs: []
+# - static_configs:
+#   - targets:
+#     - "localhost:9093"
+
+istioMonitoring:
+  enabled: true
+  namespace: istio-system
+
+thanos:
+  enabled: false
+  ## ObjectStoreConfig
+  ## Ref: https://github.com/thanos-io/thanos/blob/master/docs/storage.md
+  objectConfig: {}
+
+## Default liveness probe
+##
+defaultLivenessProbe:
+  initialDelaySeconds: 300
+  failureThreshold: 6
+  httpGet:
+    path: /-/healthy
+    port: web
+    scheme: HTTP
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 10
+
+## Default readiness probe
+##
+defaultReadinessProbe:
+  initialDelaySeconds: 60
+  failureThreshold: 10
+  httpGet:
+    path: /-/ready
+    port: web
+    scheme: HTTP
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 10
+
+lsexport:
+  sidecarContainers:
+  - name: otel-sidecar
+    image: lightstep/opentelemetry-prometheus-sidecar
+    imagePullPolicy: Always
+    args:
+    - --prometheus.wal=/data/wal
+    - --destination.endpoint=injest.lightstep.com
+    - --destination.header=access-token=WNhM3W5n4D+RFWXoo5tCDgLnAcNLuscUuTZN4l/Auxy7p7oS3biMsxa89I/LIeLbjsHlloBDvfDtVvt3MRIqvh2lddaOJFlTz8c6ZLmp
+    volumeMounts:
+    - name: storage-volume
+      mountPath: /data
+    ports:
+    - name: admin-port
+      containerPort: 9091
+    livenessProbe:
+      httpGet:
+        path: /-/health
+        port: admin-port
+      periodSeconds: 30
+      failureThreshold: 2

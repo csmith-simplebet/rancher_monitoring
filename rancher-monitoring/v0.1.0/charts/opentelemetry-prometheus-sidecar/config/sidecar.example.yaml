@@ -1,0 +1,120 @@
+# Destination parameters, where the sidecar will send metrics:
+destination:
+
+  # Endpoint should be a HTTP or HTTPS address that accepts
+  # OpenTelemetry Metrics v0.5 (or later) over gRPC:
+  endpoint: https://otlp.io:443
+
+  # Headers are included as gRPC metadata, represented as HTTP
+  # request headers when exporting metric data:
+  headers:
+    Access-Token: aabbccdd...wwxxyyzz
+
+  # Attributes are applied as OpenTelemetry resources on exporter
+  # metrics, which are typically treated like constant labels in
+  # downstream systems:
+  attributes:
+    # See the well-known semantic conventions for system resources:
+    # https://github.com/open-telemetry/opentelemetry-specification/tree/master/specification/resource/semantic_conventions
+    service.name: demo
+    environment: public
+
+  timeout: 2m
+
+  # Compression format to be used, if any. Defaults to snappy:
+  compression: snappy
+
+# Prometheus configuration:
+prometheus:
+  # The primary HTTP endpoint:
+  endpoint: http://127.0.0.1:19090
+
+  # Location of the write-ahead-log directory.
+  wal: /volume/wal
+
+  # Skip points older than this
+  max_point_age: 72h
+
+  # Send at most this number of timeseries per request
+  max_timeseries_per_request: 500
+
+  # Min number of shards, i.e. amount of concurrency
+  min_shards: 100
+
+  # Max number of shards, i.e. amount of concurrency
+  max_shards: 200
+
+# OpenTelemetry settings:
+opentelemetry:
+  # Metrics prefix is prepended to all exported metric names:
+  metrics_prefix: prefix.
+
+# Administrative settings:
+admin:
+  # Listen address of the sidecar's http server (e.g., for healtchecks)
+  listen_ip: 0.0.0.0
+  port: 10000
+
+  # Controls how often the health check status is updated.  This must
+  # be raised for Prometheus configurations that scrape infrequently.
+  # Default: 1m
+  health_check_period: 20s
+  # Controls the threshold ratio used to determine if the check
+  # should pass or fail based on the number of succes or failure to
+  # send metrics via OTLP
+  health_check_threshold_ratio: 0.5
+
+# Security settings:
+security:
+  # Root certificates used in TLS settings:
+  root_certificates:
+  - /certs/root1.crt
+  - /certs/root2.crt
+
+# Diagnostics parameters, where the sidecar will send its own diagnostic
+# data.  This is structurally the same as destination, above.  If this is
+# not configured and disable_diagnostics is also not set, this section
+# will be auto-configured to match the primary destination.
+diagnostics:
+  endpoint: https://otlp.io:443
+  headers:
+    Access-Token: wwxxyyzz...aabbccdd
+  attributes:
+    environment: internal
+
+# Set this to prevent auto-configuring diagnostics.
+disable_diagnostics: false
+
+# Filters expressed as Prometheus series expressions.  If any of these
+# are configured, at least one must match for the timeseries be
+# exported:
+filters:
+- metric{label=value}
+- other{l1=v1,l2=v2}
+
+# Metric renamings:
+metric_renames:
+- from: old_metric
+  to:   new_metric
+- from: mistake
+  to:   correct
+
+# Static metadata configures the kind of metric (counter, gauge,
+# histogram, summary), the value type (int64, double), and the
+# help string used for exporting metrics.  These settings override
+# metadata discovered via Prometheus:
+static_metadata:
+- metric:     network_bps
+  type:       counter
+  value_type: int64
+  help:       Number of bits transferred by this process.
+
+# Startup timeout determines how long to wait for the endpoint to
+# become available once before entering the initial run state.
+startup_timeout: 300s
+
+# Control the format and level of console-logging output:
+log:
+  level: debug
+  format: json
+  verbose: 1
